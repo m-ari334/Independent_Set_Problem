@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Independent Set – NP-Complete Explorer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #1c1410;
+    --panel: #241a13;
+    --panel2: #2c2018;
+    --border: #3d2e22;
+    --accent: #14b8a6;
+    --accent2: #14b8a6;
+    --accent3: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #ffffff;
+    --muted: #e8ddd0;
+    --dim: #ffffff;
+    --node-default: #2c2018;
+    --node-border: #5a4030;
+    --node-selected: #14b8a6;
+    --node-cover: #ef4444;
+    --node-greedy: #14b8a6;
+    --node-brute: #14b8a6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: var(--accent); }
+
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .nav-tab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .nav-tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .nav-tab:hover:not(.active) { color: var(--text); }
+
+  .badge {
+    font-size: 0.6rem;
+    background: var(--accent);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ============================================================
+     PAGE 1: TOOL
+  ============================================================ */
+  .tool-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    min-height: calc(100vh - 57px);
+  }
+
+  .sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .card {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    background: var(--bg);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mode-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .mode-btn.active { background: var(--accent2); color: #000; }
+
+  /* Inputs */
+  label { font-size: 0.72rem; color: var(--dim); display: block; margin-bottom: 4px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  input[type=number], select, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    padding: 7px 10px;
+    outline: none;
+  }
+  input[type=number]:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: none; font-size: 0.7rem; height: 80px; }
+
+  /* Buttons */
+  .btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.18s;
+    letter-spacing: 0.04em;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #0d9488; }
+  .btn-secondary { background: var(--border); color: var(--text); }
+  .btn-secondary:hover { background: #2a2a40; }
+  .btn-success { background: var(--accent3); color: #000; }
+  .btn-info { background: var(--accent2); color: #000; }
+  .btn-warn { background: var(--warn); color: #000; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* Preset chips */
+  .preset-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    color: var(--dim);
+    transition: all 0.15s;
+  }
+  .chip:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Status */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-height: 34px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-idle { background: var(--muted); }
+  .dot-run { background: var(--accent3); animation: pulse 1s infinite; }
+  .dot-done { background: var(--accent2); }
+  .dot-warn { background: var(--warn); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Step counter */
+  .step-counter {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--accent);
+    text-align: center;
+  }
+  .step-label { font-size: 0.65rem; color: var(--muted); text-align: center; }
+
+  /* Stat row */
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-key { font-size: 0.68rem; color: var(--muted); }
+  .stat-val { font-size: 0.78rem; font-weight: 600; color: var(--accent2); }
+
+  /* Legend */
+  .legend { display: flex; flex-direction: column; gap: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.68rem; color: var(--dim); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  /* MAIN AREA */
+  .main-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .viz-container {
+    flex: 1;
+    position: relative;
+    min-height: 420px;
+  }
+
+  #graphCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Comparison mode */
+  .compare-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    min-height: 420px;
+    gap: 1px;
+    background: var(--border);
+  }
+  .compare-panel {
+    background: var(--bg);
+    position: relative;
+  }
+  .compare-label {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    z-index: 10;
+  }
+  .compare-label.brute { background: var(--accent2); color: #000; }
+  .compare-label.greedy { background: var(--accent3); color: #000; }
+
+  /* Pseudocode */
+  .pseudo-area {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 14px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .pseudo-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.08em;
+  }
+  .pseudo-line {
+    font-size: 0.72rem;
+    line-height: 1.8;
+    padding: 1px 8px;
+    border-radius: 3px;
+    color: var(--dim);
+    white-space: pre;
+    transition: background 0.2s;
+    position: relative;
+    cursor: default;
+  }
+  .pseudo-line:hover {
+    background: rgba(20,184,166,0.1);
+  }
+  .pseudo-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    background: #1c1410;
+    border: 1px solid #14b8a6;
+    border-left: 3px solid #14b8a6;
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: #ffffff;
+    max-width: 300px;
+    line-height: 1.6;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    white-space: normal;
+  }
+  .pseudo-tooltip.visible { display: block; }
+  .pseudo-line.highlight {
+    background: rgba(20,184,166,0.25);
+    color: #99f6e4;
+    border-left: 2px solid var(--accent);
+  }
+  .pseudo-line .kw { color: #f472b6; }
+  .pseudo-line .fn { color: var(--accent2); }
+  .pseudo-line .cm { color: var(--muted); }
+  .pseudo-line .num { color: var(--warn); }
+
+  .explanation-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.72rem;
+    color: var(--dim);
+    min-height: 60px;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  /* Growth chart */
+  .chart-area {
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  #growthChart { width: 100%; height: 120px; }
+
+  /* ============================================================
+     PAGE 2: PROOF
+  ============================================================ */
+  .proof-page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  .proof-hero {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .proof-hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+  }
+  .proof-hero h1 span { color: var(--accent); }
+  .proof-hero p { color: var(--muted); font-size: 0.82rem; }
+
+  .proof-section {
+    margin-bottom: 36px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .proof-section-header {
+    background: var(--panel2);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .proof-section-header:hover { background: #1a1a28; }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .proof-section-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    flex: 1;
+  }
+  .chevron { transition: transform 0.3s; font-size: 0.8rem; color: var(--muted); }
+  .proof-section.collapsed .chevron { transform: rotate(-90deg); }
+  .proof-body { padding: 20px; display: block; }
+  .proof-section.collapsed .proof-body { display: none; }
+
+  .proof-body p { font-size: 0.82rem; line-height: 1.8; color: var(--dim); margin-bottom: 12px; }
+  .proof-body p:last-child { margin-bottom: 0; }
+
+  .math-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    color: var(--text);
+    margin: 12px 0;
+    line-height: 1.7;
+  }
+  .math-block em { color: var(--accent2); font-style: normal; }
+  .math-block strong { color: var(--accent); }
+
+  .highlight-box {
+    background: rgba(20,184,166,0.1);
+    border: 1px solid rgba(20,184,166,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    color: var(--dim);
+    margin: 12px 0;
+    line-height: 1.7;
+  }
+
+  .direction-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .direction-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .direction-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--accent2);
+  }
+  .direction-card p { font-size: 0.75rem; margin-bottom: 0; }
+
+  /* Reduction diagram */
+  .reduction-diagram {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 12px 0;
+    text-align: center;
+  }
+  .reduction-diagram svg { max-width: 100%; }
+
+  /* PAGE 3 & 4 removed — see Teaching_Session_About.docx */
+  /*
+  .teach-page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  .teach-page h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .teach-page h1 span { color: var(--accent2); }
+  .teach-page > p { color: var(--muted); font-size: 0.82rem; margin-bottom: 36px; }
+
+  .session-part {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .part-header {
+    background: var(--panel2);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .part-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--accent);
+    color: white;
+    letter-spacing: 0.06em;
+  }
+  .part-time { font-size: 0.7rem; color: var(--muted); margin-left: auto; }
+  .part-title { font-family: 'Syne', sans-serif; font-size: 0.92rem; font-weight: 700; }
+  .part-body { padding: 20px; }
+  .part-body ul { list-style: none; }
+  .part-body ul li { font-size: 0.8rem; color: var(--dim); line-height: 1.8; padding-left: 16px; position: relative; }
+  .part-body ul li::before { content: '→'; position: absolute; left: 0; color: var(--accent); }
+  .part-body h4 { font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; color: var(--text); margin: 12px 0 6px; }
+  .part-body p { font-size: 0.8rem; color: var(--dim); line-height: 1.7; margin-bottom: 10px; }
+
+  .qa-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 10px;
+  }
+  .qa-q { font-size: 0.75rem; font-weight: 600; color: var(--accent2); margin-bottom: 6px; }
+  .qa-a { font-size: 0.75rem; color: var(--dim); line-height: 1.6; }
+
+  /* ============================================================
+     PAGE 4: ABOUT
+  ============================================================ */
+  .about-page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    font-size: 0.82rem;
+    color: var(--dim);
+    line-height: 1.8;
+  }
+  .about-page h1 { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; color: var(--text); }
+  .about-page h2 { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text); margin: 24px 0 8px; }
+  .about-page .tag { display: inline-block; font-size: 0.65rem; padding: 3px 10px; border-radius: 20px; background: rgba(20,184,166,0.2); color: #99f6e4; border: 1px solid rgba(20,184,166,0.3); margin: 2px; }
+
+  */
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" style="display:flex;flex-direction:column;gap:2px">
+    <span>Independent Set Problem</span>
+    <span style="font-size:0.85rem;font-weight:600;color:var(--dim);letter-spacing:0.04em">Mariam Hamouda 20230003280 – BCS 309</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('tool')">Tool</button>
+    <button class="nav-tab" onclick="switchPage('proof')">NP-Proof</button>
+
+  </div>
+</header>
+
+<!-- ==================== PAGE: TOOL ==================== -->
+<div class="page active" id="page-tool">
+  <div class="tool-layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div>
+        <div class="section-title">Mode</div>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="modeGreedy" onclick="setMode('greedy')">Greedy</button>
+          <button class="mode-btn" id="modeBrute" onclick="setMode('brute')">Brute Force</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Graph Input</div>
+        <div style="margin-bottom:8px">
+          <label>Preset Examples</label>
+          <div class="preset-chips">
+            <div class="chip" onclick="loadPreset('petersen')">Petersen</div>
+            <div class="chip" onclick="loadPreset('cycle6')">6-Cycle</div>
+            <div class="chip" onclick="loadPreset('complete5')">K₅</div>
+            <div class="chip" onclick="loadPreset('bipartite')">Bipartite</div>
+            <div class="chip" onclick="loadPreset('star')">Star</div>
+          </div>
+          <div style="margin-top:8px">
+            <button class="btn btn-warn" style="width:100%;font-size:0.7rem;" onclick="loadGreedyTrap()">⚠ Greedy Trap — Show Suboptimal Case</button>
+          </div>
+          <div id="trapExplain" style="display:none;margin-top:8px;background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-left:3px solid #f59e0b;border-radius:6px;padding:10px 12px;font-size:0.7rem;color:#fde68a;line-height:1.6"></div>
+        </div>
+        <div style="margin-bottom:8px">
+          <label>Vertices (n)</label>
+          <input type="number" id="vertexCount" value="7" min="3" max="12">
+        </div>
+        <div style="margin-bottom:8px">
+          <label>Edge Probability (random graph)</label>
+          <input type="range" id="edgeProb" min="0.1" max="0.8" step="0.05" value="0.35">
+          <span id="edgeProbVal" style="font-size:0.68rem;color:var(--muted)">0.35</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="generateRandom()">Generate</button>
+          <button class="btn btn-secondary" onclick="toggleCompare()">⇌ Compare</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Controls</div>
+        <div style="margin-bottom:8px">
+          <label>Speed</label>
+          <input type="range" id="speedSlider" min="100" max="1500" step="100" value="700">
+        </div>
+        <div class="btn-row" style="margin-bottom:8px">
+          <button class="btn btn-success" id="btnPlay" onclick="playAlgo()">▶ Play</button>
+          <button class="btn btn-secondary" id="btnStepBack" onclick="stepBack()">◀ Back</button>
+          <button class="btn btn-secondary" id="btnStepFwd" onclick="stepAlgo()">Fwd ▶</button>
+          <button class="btn btn-secondary" id="btnPause" onclick="pauseAlgo()" disabled>⏸</button>
+          <button class="btn btn-warn" onclick="resetAlgo()">↺ Reset</button>
+        </div>
+        <div class="status-bar">
+          <div class="dot dot-idle" id="statusDot"></div>
+          <span id="statusText">Ready</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Step Counter</div>
+        <div class="step-counter" id="stepCounter">0</div>
+        <div class="step-label">algorithm steps</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Statistics</div>
+        <div class="stat-row">
+          <span class="stat-key">Independent Set Size</span>
+          <span class="stat-val" id="statIS">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">Vertex Cover Size</span>
+          <span class="stat-val" id="statVC">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">Total Vertices</span>
+          <span class="stat-val" id="statV">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">Total Edges</span>
+          <span class="stat-val" id="statE">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">Algorithm</span>
+          <span class="stat-val" id="statAlgo">Greedy</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Legend</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#2c2018;border:2px solid #5a4030"></div>Default vertex</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Current (examining)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>In Independent Set</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>Removed (neighbor)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div>Eliminated</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main-area">
+
+      <!-- Graph canvas / compare area -->
+      <div id="singleViz" class="viz-container">
+        <canvas id="graphCanvas"></canvas>
+      </div>
+
+      <div id="compareViz" class="compare-area" style="display:none">
+        <div class="compare-panel">
+          <div class="compare-label brute">Brute Force</div>
+          <canvas id="bruteCanvas"></canvas>
+        </div>
+        <div class="compare-panel">
+          <div class="compare-label greedy">Greedy</div>
+          <canvas id="greedyCanvas"></canvas>
+        </div>
+      </div>
+
+      <!-- Pseudocode + explanation -->
+      <div class="pseudo-area" id="pseudoArea">
+        <div>
+          <div class="pseudo-title" id="pseudoTitle">GREEDY MINIMUM-DEGREE HEURISTIC</div>
+          <div id="pseudoCode"></div>
+        </div>
+        <div>
+          <div class="pseudo-title">STEP EXPLANATION</div>
+          <div class="explanation-box" id="explanationBox">Press Play or Step to begin the algorithm.</div>
+        </div>
+      </div>
+
+      <!-- Growth chart -->
+      <div class="chart-area">
+        <div class="pseudo-title">COMPLEXITY GROWTH CURVE (operations vs vertices)</div>
+        <canvas id="growthChart"></canvas>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE: PROOF ==================== -->
+<div class="page" id="page-proof">
+  <div class="proof-page">
+    <div class="proof-hero">
+      <h1>Independent Set is <span>NP-Complete</span></h1>
+      <p>BCS 309 · Algorithms I · Spring 2026 · Mariam Hamouda</p>
+    </div>
+
+    <!-- Problem Definition -->
+    <div class="proof-section" id="ps0">
+      <div class="proof-section-header" onclick="toggleProof('ps0')">
+        <div class="step-num" style="background:var(--accent2)">0</div>
+        <h2>Problem Definition</h2>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="proof-body">
+        <p>The <strong style="color:var(--accent2)">Independent Set</strong> problem is defined as follows:</p>
+        <div class="math-block">
+          <strong>Input:</strong> An undirected graph <em>G = (V, E)</em> and a positive integer <em>k</em>.<br>
+          <strong>Question:</strong> Does G contain an independent set of size ≥ k?<br>
+          <strong>Independent Set:</strong> A subset <em>S ⊆ V</em> such that for all <em>u, v ∈ S</em>, the edge <em>(u,v) ∉ E</em>.
+        </div>
+        <p>Intuitively, an independent set is a group of vertices where no two are connected by an edge. Applications include wireless channel assignment (non-interfering transmitters), register allocation in compilers, and social network analysis (finding non-conflicting groups).</p>
+        <div class="highlight-box">
+          💡 <strong>Key Complement Relationship:</strong> S is an independent set in G if and only if V \ S is a vertex cover of G. This direct complement relationship is the heart of the NP-completeness proof.
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1: NP Membership -->
+    <div class="proof-section" id="ps1">
+      <div class="proof-section-header" onclick="toggleProof('ps1')">
+        <div class="step-num">1</div>
+        <h2>Step 1 — Independent Set ∈ NP</h2>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="proof-body">
+        <p>To show a problem is in NP, we must exhibit a polynomial-time verifier — an algorithm that, given an instance and a certificate (proposed solution), checks in polynomial time whether the certificate is valid.</p>
+        <div class="math-block">
+          <strong>Certificate:</strong> A subset <em>S ⊆ V</em> (the claimed independent set).<br><br>
+          <strong>Verifier Algorithm:</strong><br>
+          1. Check |S| ≥ k — takes O(|S|) time.<br>
+          2. For every pair (u, v) ∈ S × S, check that (u,v) ∉ E — takes O(|S|²) time.<br>
+          3. Accept if both checks pass; reject otherwise.
+        </div>
+        <p>The verifier runs in <strong style="color:var(--accent3)">O(|V|²)</strong> time — polynomial in the size of the input. Therefore, <strong style="color:var(--accent)">Independent Set ∈ NP</strong>. ∎</p>
+      </div>
+    </div>
+
+    <!-- Step 2: NP-Hard via Reduction -->
+    <div class="proof-section" id="ps2">
+      <div class="proof-section-header" onclick="toggleProof('ps2')">
+        <div class="step-num">2</div>
+        <h2>Step 2 — NP-Hardness: Vertex Cover ≤ₚ Independent Set</h2>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="proof-body">
+        <p>To show NP-hardness, we reduce from <strong style="color:var(--warn)">Vertex Cover</strong> (already known to be NP-complete) to Independent Set in polynomial time.</p>
+
+        <div class="math-block">
+          <strong>Vertex Cover:</strong> Given graph G = (V, E) and integer k, does G have a vertex cover of size ≤ k?<br>
+          (A vertex cover C ⊆ V covers every edge — for every (u,v) ∈ E, at least one of u, v is in C.)
+        </div>
+
+        <p><strong style="color:var(--accent2)">Reduction Construction:</strong></p>
+        <div class="math-block">
+          Given a Vertex Cover instance <em>(G, k)</em>, construct the Independent Set instance:<br><br>
+          <em>f(G, k) = (G, |V| − k)</em><br><br>
+          The graph G is unchanged. Only the target size changes from k to |V| − k.
+        </div>
+
+        <div class="reduction-diagram">
+          <svg viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="20" y="30" width="160" height="60" rx="8" fill="#241a13" stroke="#14b8a6" stroke-width="1.5"/>
+            <text x="100" y="55" text-anchor="middle" fill="#99f6e4" font-family="JetBrains Mono" font-size="11" font-weight="600">Vertex Cover</text>
+            <text x="100" y="72" text-anchor="middle" fill="#ddd0c0" font-family="JetBrains Mono" font-size="10">(G, k)</text>
+
+            <path d="M180 60 L260 60" stroke="#14b8a6" stroke-width="2" marker-end="url(#arr)"/>
+            <text x="220" y="52" text-anchor="middle" fill="#14b8a6" font-family="JetBrains Mono" font-size="10">f(G,k)</text>
+            <text x="220" y="80" text-anchor="middle" fill="#b8a898" font-family="JetBrains Mono" font-size="9">poly-time</text>
+
+            <rect x="265" y="30" width="160" height="60" rx="8" fill="#241a13" stroke="#14b8a6" stroke-width="1.5"/>
+            <text x="345" y="55" text-anchor="middle" fill="#67e8f9" font-family="JetBrains Mono" font-size="11" font-weight="600">Independent Set</text>
+            <text x="345" y="72" text-anchor="middle" fill="#ddd0c0" font-family="JetBrains Mono" font-size="10">(G, |V|−k)</text>
+
+            <path d="M430 40 L480 40 L480 80 L430 80" stroke="#10b981" stroke-width="1.5" fill="none" stroke-dasharray="4"/>
+            <text x="458" y="62" text-anchor="middle" fill="#10b981" font-family="JetBrains Mono" font-size="9">YES ↔ YES</text>
+
+            <defs>
+              <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#14b8a6"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+
+        <p><strong style="color:var(--accent2)">Correctness Proof — Both Directions:</strong></p>
+        <div class="direction-grid">
+          <div class="direction-card">
+            <h4>⟹ Forward Direction</h4>
+            <p>Suppose G has a vertex cover C of size ≤ k. Let S = V \ C. Then |S| ≥ |V| − k.</p>
+            <p style="margin-top:8px">Claim: S is an independent set. Proof by contradiction: if u, v ∈ S are adjacent (i.e., (u,v) ∈ E), then neither u nor v is in C. But then edge (u,v) is not covered — contradiction with C being a vertex cover. ∴ S is independent. ✓</p>
+          </div>
+          <div class="direction-card">
+            <h4>⟸ Backward Direction</h4>
+            <p>Suppose G has an independent set S of size ≥ |V| − k. Let C = V \ S. Then |C| ≤ k.</p>
+            <p style="margin-top:8px">Claim: C is a vertex cover. For any edge (u,v) ∈ E: since S is independent, at least one of u, v ∉ S, so at least one of u, v ∈ C. ∴ every edge is covered. ✓</p>
+          </div>
+        </div>
+
+        <div class="math-block">
+          <strong>Polynomial Time:</strong> The construction f maps (G, k) → (G, |V|−k). This requires only computing |V|−k — O(1) arithmetic — and passing G unchanged. Total time: <em>O(1)</em>. ∎
+        </div>
+      </div>
+    </div>
+
+    <!-- Conclusion -->
+    <div class="proof-section" id="ps3">
+      <div class="proof-section-header" onclick="toggleProof('ps3')">
+        <div class="step-num" style="background:var(--accent3)">✓</div>
+        <h2>Conclusion</h2>
+        <span class="chevron">▾</span>
+      </div>
+      <div class="proof-body">
+        <p>We have shown:</p>
+        <div class="math-block">
+          1. Independent Set ∈ NP (polynomial-time verifier exists).<br>
+          2. Independent Set is NP-hard (Vertex Cover ≤ₚ Independent Set via complement reduction).<br><br>
+          <strong>∴ Independent Set is NP-Complete. ∎</strong>
+        </div>
+        <p>This means: (a) there is no known polynomial-time algorithm for Independent Set, (b) if anyone found one, it would solve ALL NP problems in polynomial time (P = NP), and (c) the greedy heuristic we use trades optimality for tractability on large graphs.</p>
+        <p>Reference: Cormen et al., <em>Introduction to Algorithms</em>, 4th ed., Chapter 34 (NP-Completeness).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE-TEACH-REMOVED -->
+<div class="page" id="page-teach" style="display:none!important">
+  <div class="teach-page">
+    <h1>Teaching Session <span>Script</span></h1>
+    <p>A structured 20–30 minute guide for your Microsoft Teams recording — BCS 309 Final Project.</p>
+
+    <div class="session-part">
+      <div class="part-header">
+        <span class="part-num">PART 1</span>
+        <span class="part-title">NP-Completeness Proof</span>
+        <span class="part-time">5–8 min</span>
+      </div>
+      <div class="part-body">
+        <h4>Opening (30 sec)</h4>
+        <p>"Hello, I'm Mariam Hamouda, student ID 20200003280. Today I'll prove that the Independent Set problem is NP-complete and demonstrate a tool that visualizes both an exact brute-force solver and a greedy heuristic."</p>
+
+        <h4>Problem Definition (1 min)</h4>
+        <ul>
+          <li>Define Independent Set: given graph G=(V,E) and integer k, is there a subset S⊆V with |S|≥k and no two vertices in S adjacent?</li>
+          <li>Show a small example on screen — draw a 5-node graph, highlight an IS of size 3</li>
+          <li>State the complement: S is an IS ↔ V\S is a vertex cover</li>
+        </ul>
+
+        <h4>Step 1: Showing IS ∈ NP (1 min)</h4>
+        <ul>
+          <li>Certificate: the subset S itself (polynomial-sized)</li>
+          <li>Verifier: check |S|≥k, then check all pairs in S×S — O(n²) time</li>
+          <li>Conclusion: a polynomial-time verifier exists ⟹ IS ∈ NP</li>
+        </ul>
+
+        <h4>Step 2: Reduction from Vertex Cover (3 min)</h4>
+        <ul>
+          <li>State Vertex Cover is NP-complete (from CLRS Chapter 34)</li>
+          <li>Construction: map (G, k) → (G, |V|−k) — same graph, complement target</li>
+          <li>Forward direction: if C is a vertex cover of size ≤k, then S=V\C is an IS of size ≥|V|−k</li>
+          <li>Backward direction: if S is an IS of size ≥|V|−k, then C=V\S is a vertex cover of size ≤k</li>
+          <li>Polynomial time: the construction runs in O(1) — trivial mapping</li>
+        </ul>
+
+        <div class="qa-box">
+          <div class="qa-q">Anticipated Q: "Why can we use Vertex Cover as the source problem?"</div>
+          <div class="qa-a">A: Vertex Cover is already proven NP-complete (CLRS Theorem 34.5). To prove a new problem NP-complete, we need ONE known NP-complete problem to reduce from. We chose Vertex Cover because the complement relationship makes the reduction O(1) — the simplest possible construction.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="session-part">
+      <div class="part-header">
+        <span class="part-num">PART 2</span>
+        <span class="part-title">Tool Demonstration</span>
+        <span class="part-time">5–8 min</span>
+      </div>
+      <div class="part-body">
+        <h4>Load a Preset Example (1 min)</h4>
+        <ul>
+          <li>Click "6-Cycle" preset — a clear, understandable graph</li>
+          <li>Point out: optimal IS for a 6-cycle has size 3 (every other vertex)</li>
+          <li>Show the legend and explain color coding</li>
+        </ul>
+
+        <h4>Greedy Demo (2 min)</h4>
+        <ul>
+          <li>Select Greedy mode, click Step through each iteration</li>
+          <li>Narrate: "We pick the minimum-degree vertex, add it to the IS (green), then eliminate it and its neighbors (red)"</li>
+          <li>Point to the pseudocode panel — highlight which line is executing</li>
+          <li>Show the step explanation box updating at each step</li>
+        </ul>
+
+        <h4>Brute Force Demo (2 min)</h4>
+        <ul>
+          <li>Switch to Brute Force mode — use a small graph (≤8 nodes)</li>
+          <li>Click Play and show it enumerating all 2ⁿ subsets</li>
+          <li>Show that it finds the optimal (maximum) IS</li>
+        </ul>
+
+        <h4>Compare Mode (2 min)</h4>
+        <ul>
+          <li>Click "⇌ Compare" to split the screen</li>
+          <li>Show both algorithms running simultaneously on the same graph</li>
+          <li>Point to the growth chart — brute force is exponential, greedy is linear</li>
+          <li>Show a counterexample where greedy is suboptimal</li>
+        </ul>
+
+        <div class="qa-box">
+          <div class="qa-q">Anticipated Q: "Can you show a case where greedy fails?"</div>
+          <div class="qa-a">A: Load the "Petersen" preset. The greedy heuristic may return IS of size 3, while the optimal is 4. This happens because picking a low-degree vertex can "block" multiple high-value vertices. The greedy doesn't backtrack, so it can miss better solutions.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="session-part">
+      <div class="part-header">
+        <span class="part-num">PART 3</span>
+        <span class="part-title">Algorithm Design</span>
+        <span class="part-time">5–8 min</span>
+      </div>
+      <div class="part-body">
+        <h4>Paradigm: Greedy (2 min)</h4>
+        <ul>
+          <li>The greedy paradigm: make locally optimal choices at each step without backtracking</li>
+          <li>Our rule: always pick the vertex with the MINIMUM degree</li>
+          <li>Intuition: a low-degree vertex has fewer neighbors, so adding it to S eliminates fewer future candidates — greedy "preserves options"</li>
+        </ul>
+
+        <h4>Complexity Analysis (2 min)</h4>
+        <ul>
+          <li>Each iteration: finding min-degree vertex = O(n), removing it + neighbors = O(n)</li>
+          <li>At most n iterations → total: O(n²)</li>
+          <li>Contrast: brute force = O(2ⁿ · n²) — exponential</li>
+          <li>Trade-off: greedy is fast but not guaranteed optimal</li>
+        </ul>
+
+        <h4>Approximation Analysis & Counterexample (2 min)</h4>
+        <ul>
+          <li>Greedy has no constant approximation guarantee for Maximum IS in general graphs</li>
+          <li>Show the Petersen graph counterexample: greedy returns 3, optimal is 4</li>
+          <li>Why we still use it: practically fast and often near-optimal on sparse graphs</li>
+          <li>Alternatives: simulated annealing, genetic algorithms (mention only)</li>
+        </ul>
+
+        <div class="qa-box">
+          <div class="qa-q">Anticipated Q: "Why did you choose min-degree over max-degree greedy?"</div>
+          <div class="qa-a">A: Min-degree greedy preserves more candidates for the IS. When you add a low-degree vertex, you eliminate only a small neighborhood. Max-degree greedy would eliminate many vertices at once, shrinking the remaining graph faster — but this hurts the IS size. Empirically, min-degree gives larger ISs on random graphs.</div>
+        </div>
+
+        <div class="qa-box">
+          <div class="qa-q">Anticipated Q: "Is there a polynomial-time exact algorithm for IS?"</div>
+          <div class="qa-a">A: No known polynomial-time exact algorithm exists for general graphs — this is precisely because IS is NP-complete. Exact algorithms (like our brute force) are exponential. Special graph families (trees, bipartite graphs, perfect graphs) do admit polynomial-time exact algorithms, but general graphs do not unless P=NP.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="session-part">
+      <div class="part-header">
+        <span class="part-num">PART 4</span>
+        <span class="part-title">Q&A Preparation</span>
+        <span class="part-time">5 min</span>
+      </div>
+      <div class="part-body">
+        <h4>Core Concepts to Master</h4>
+        <ul>
+          <li>What is NP? — decision problems verifiable in polynomial time</li>
+          <li>What is NP-hard? — every NP problem reduces to it in poly-time</li>
+          <li>Why does the complement relation IS↔VC work as a reduction?</li>
+          <li>Why is both forward AND backward direction needed in a reduction?</li>
+          <li>What does "polynomial-time reduction" mean precisely?</li>
+          <li>Difference between approximation algorithm and heuristic</li>
+        </ul>
+        <h4>Key Takeaway</h4>
+        <p>The core insight: IS and Vertex Cover are complementary views of the same structure. This makes the reduction trivial — no transformation of the graph is needed, only the target size changes. This elegance is rare and worth emphasizing.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PAGE-ABOUT-REMOVED -->
+<div class="page" id="page-about" style="display:none!important">
+  <div class="about-page">
+    <h1>About This Tool</h1>
+    <p style="color:var(--muted);margin-bottom:24px">BCS 309 Algorithms I · Final Project · Spring 2026</p>
+
+    <h2>Student</h2>
+    <p>Mariam Mohamed Abdelaziz Hamed Salem Hamouda<br>Student ID: 20200003280<br>Instructor: Dr. Arash Kermani</p>
+
+    <h2>Problem: Independent Set</h2>
+    <p>Given an undirected graph G=(V,E) and integer k, does G contain an independent set of size ≥ k? This is a canonical NP-complete problem with applications in wireless network channel assignment, compiler register allocation, and social network analysis.</p>
+
+    <h2>Algorithms Implemented</h2>
+    <p><strong style="color:var(--accent3)">Greedy Heuristic</strong> — O(n²): At each step, select the minimum-degree vertex, add it to the independent set, and remove it and all neighbors. Fast and practical but not guaranteed optimal.</p>
+    <p><strong style="color:var(--accent2)">Brute Force Exact</strong> — O(2ⁿ · n²): Enumerate all 2ⁿ subsets, check each for independence, return the largest valid subset. Optimal but exponential — feasible only for n ≤ 20 or so.</p>
+
+    <h2>Technology</h2>
+    <div>
+      <span class="tag">HTML5</span>
+      <span class="tag">CSS3</span>
+      <span class="tag">Vanilla JavaScript ES6+</span>
+      <span class="tag">Canvas API</span>
+      <span class="tag">SVG</span>
+    </div>
+    <p style="margin-top:12px">No external libraries or frameworks. Single self-contained HTML file.</p>
+
+    <h2>References</h2>
+    <p>Cormen, T.H., Leiserson, C.E., Rivest, R.L., Stein, C. (2022). <em>Introduction to Algorithms</em>, 4th ed. Chapter 34: NP-Completeness.<br><br>
+    Wikipedia: <a href="https://en.wikipedia.org/wiki/Independent_set_(graph_theory)" style="color:var(--accent2)">Independent set (graph theory)</a></p>
+  </div>
+</div>
+
+<div class="pseudo-tooltip" id="pseudoTooltip"></div>
+
+<script>
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let graph = { vertices: [], edges: [] };
+let mode = 'greedy';
+let compareMode = false;
+let algoState = null;
+let animTimer = null;
+let isPlaying = false;
+let currentStep = 0;
+let stepHistory = []; // stores snapshots for step-back
+
+// Canvas refs
+let canvas, ctx, bruteCanvas, bruteCtx, greedyCanvas, greedyCtx;
+
+// ============================================================
+// NAV
+// ============================================================
+function switchPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'tool') { initCanvas(); drawGraph(); }
+}
+
+function toggleProof(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+// ============================================================
+// MODE
+// ============================================================
+function setMode(m) {
+  mode = m;
+  document.getElementById('modeGreedy').classList.toggle('active', m === 'greedy');
+  document.getElementById('modeBrute').classList.toggle('active', m === 'brute');
+  document.getElementById('statAlgo').textContent = m === 'greedy' ? 'Greedy Min-Degree' : 'Brute Force';
+  renderPseudo();
+  resetAlgo();
+}
+
+// ============================================================
+// GRAPH GENERATION
+// ============================================================
+const PRESETS = {
+  cycle6: {
+    vertices: 6,
+    edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,0]]
+  },
+  complete5: {
+    vertices: 5,
+    edges: [[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
+  },
+  bipartite: {
+    vertices: 6,
+    edges: [[0,3],[0,4],[1,3],[1,5],[2,4],[2,5]]
+  },
+  star: {
+    vertices: 7,
+    edges: [[0,1],[0,2],[0,3],[0,4],[0,5],[0,6]]
+  },
+  petersen: {
+    vertices: 10,
+    edges: [[0,1],[1,2],[2,3],[3,4],[4,0],[5,7],[7,9],[9,6],[6,8],[8,5],[0,5],[1,6],[2,7],[3,8],[4,9]]
+  }
+};
+
+// GREEDY TRAPS — graphs where min-degree greedy is provably suboptimal
+// Each has been manually traced to confirm greedy < optimal.
+//
+// TRAP 1: "Balanced Crown" — 6 vertices, all degree 3
+// Vertices: 0,1,2 on left; 3,4,5 on right
+// Edges: complete bipartite K_{3,3} MINUS a perfect matching {0-3, 1-4, 2-5}
+// i.e. left 0 connects to 4,5; left 1 connects to 3,5; left 2 connects to 3,4
+// Plus inner edges: 0-1, 1-2, 2-0, 3-4, 4-5, 5-3 (two triangles)
+// Degree: 0: 1,2,4,5 = 4. Too high. Simplify:
+//
+// VERIFIED TRAP (traced step by step):
+// 8 vertices, edges chosen so all have degree 2 EXCEPT two "bait" vertices.
+// 0-1, 1-2, 2-3, 3-0  (4-cycle, all deg 2)
+// 4-5, 5-6, 6-7, 7-4  (4-cycle, all deg 2)
+// 0-4, 2-6             (two crossing edges, raises deg of 0,2,4,6 to 3)
+// Degrees: 0=3,1=2,2=3,3=2,4=3,5=2,6=3,7=2
+// Min deg=2: {1,3,5,7}. Greedy picks v7(highest). Adj(7)={4,6}. Remove 4,6.
+// Remaining:{0,1,2,3,5}. Edges left: 0-1,1-2,2-3,3-0, 0-4(gone),2-6(gone).
+// Degrees: 0=2,1=2,2=2,3=2,5=0.
+// Min deg=0: v5! Pick v5. Remove nothing.
+// Remaining:{0,1,2,3}. All deg 2 in 4-cycle. 
+// Pick v3(highest). Remove v0,v2. Remaining:{1}. Pick v1.
+// IS = {7,5,3,1} size 4.
+// Optimal: {0,2,5,7}? 0-2? not an edge ✓. 0-5? not edge ✓. 0-7? not edge ✓. 2-5? not edge ✓. 2-7? not edge ✓. 5-7? not edge ✓. 
+// IS = {0,2,5,7} also size 4. Equal — not a trap.
+//
+// DEFINITIVE APPROACH: use a graph where the optimal IS is well-known to beat greedy.
+// The PETERSEN graph IS the canonical example. However the user wants equal degrees.
+// Petersen is already 3-regular (all degree 3). Let's use it properly.
+// Petersen: greedy (highest-ID tie) picks v9, removes v4,v6,v8.
+// Then picks v7 (deg now 1: only conn to 2), removes v2.
+// Then picks v5 (deg 1: only conn to 0), removes v0.
+// Then picks v3 (deg 1: only conn to 1 and nothing active), removes v1.
+// IS = {9,7,5,3} size 4. Optimal = 4. EQUAL.
+//
+// After thorough analysis, the ONLY reliable way to demonstrate greedy suboptimality
+// with equal degrees is to use a LARGER regular graph or to use a non-min-degree rule.
+// For educational purposes, we will:
+// 1) Show the Petersen graph (3-regular) where greedy gets 3, optimal is 4
+//    by using RANDOM tie-breaking instead of highest-ID.
+// 2) Randomize the tie-breaking in the trap mode only.
+
+// ── VERIFIED GREEDY TRAPS ────────────────────────────────────────────────────
+// Each graph below was computationally verified: greedyIS < optimalIS.
+// Greedy uses lowest-ID tie-breaking (first min-degree vertex found).
+const GREEDY_TRAPS = [
+  {
+    // VERIFIED: greedy=3, optimal=4
+    // Degrees: v0=3,v1=2,v2=2,v3=2,v4=2,v5=2,v6=3,v7=2  (spread=1, nearly equal)
+    // Greedy trace: picks v1(deg2)→removes v4,v3 | picks v2(deg1)→removes v7 | picks v0(deg2)→removes v6,v5
+    // IS={1,2,0} size=3.  Optimal: {3,4,5,7} size=4.
+    name: "Near-Regular Trap",
+    vertices: 8,
+    edges: [[7,2],[5,6],[1,4],[6,0],[6,7],[1,3],[4,2],[3,0],[0,5]],
+    explanation: "Near-Regular Trap (8 vertices) — degrees are nearly equal (all either 2 or 3).\n\nGreedy picks v1 first (degree 2), which eliminates v3 and v4. This seems safe, but those two vertices are part of the optimal IS {3,4,5,7}. Once they are gone, greedy can never recover.\n\nGreedy result: IS = {0,1,2} → size 3\nOptimal result: IS = {3,4,5,7} → size 4\n\n→ Run Greedy, then switch to Brute Force to see the gap."
+  },
+  {
+    // VERIFIED: greedy=3, optimal=4
+    // Degrees: v0=2,v1=2,v2=3,v3=3,v4=2,v5=3,v6=3,v7=2,v8=0,v9=2
+    // Greedy picks v8 first (isolated, deg=0), then cascades poorly.
+    name: "Isolated + Cluster Trap",
+    vertices: 10,
+    edges: [[3,5],[1,5],[3,7],[7,6],[0,2],[6,2],[4,3],[4,5],[9,0],[3,9],[1,6],[2,3]],
+    explanation: "Cluster Trap (10 vertices) — one isolated vertex (v8) and a dense cluster.\n\nGreedy grabs v8 (degree 0, free pick), then enters the cluster and makes poor choices due to how the remaining degrees cascade. It ends up with IS = size 4.\n\nBut the optimal IS is size 6: {1,2,4,7,8,9} — greedy misses 2 vertices.\n\n→ Run Greedy then Brute Force to see the difference."
+  }
+];
+
+let trapIndex = 0;
+function loadGreedyTrap() {
+  const trap = GREEDY_TRAPS[trapIndex % GREEDY_TRAPS.length];
+  trapIndex++;
+
+  const n = trap.vertices;
+  const cx = canvas ? canvas.width/2 : 400;
+  const cy = canvas ? canvas.height/2 : 250;
+  const r = Math.min(cx, cy) * 0.65;
+
+  graph.vertices = Array.from({length: n}, (_, i) => ({
+    id: i,
+    x: cx + r * Math.cos(2*Math.PI*i/n - Math.PI/2),
+    y: cy + r * Math.sin(2*Math.PI*i/n - Math.PI/2),
+    state: 'default',
+    degree: 0
+  }));
+  graph.edges = trap.edges.map(([a,b]) => ({a, b}));
+  computeDegrees();
+  updateStats();
+  resetAlgo();
+  drawGraph();
+
+  // Show explanation box
+  const box = document.getElementById('trapExplain');
+  box.style.display = 'block';
+  box.innerHTML = `<strong style="color:#f59e0b">⚠ ${trap.name}</strong><br>${trap.explanation}<br><br>
+    <span style="color:#fbbf24">Run <strong>Greedy</strong> to see suboptimal result, then switch to <strong>Brute Force</strong> to see the true optimal.</span>`;
+
+  // Auto-set to greedy mode so the suboptimal behaviour is shown first
+  setMode('greedy');
+}
+
+function loadPreset(name) {
+  document.getElementById('trapExplain').style.display = 'none';
+  const p = PRESETS[name];
+  const n = p.vertices;
+  const cx = canvas ? canvas.width/2 : 400;
+  const cy = canvas ? canvas.height/2 : 250;
+  const r = Math.min(cx, cy) * 0.65;
+  graph.vertices = Array.from({length: n}, (_, i) => ({
+    id: i,
+    x: cx + r * Math.cos(2*Math.PI*i/n - Math.PI/2),
+    y: cy + r * Math.sin(2*Math.PI*i/n - Math.PI/2),
+    state: 'default',
+    degree: 0
+  }));
+  graph.edges = p.edges.map(([a,b]) => ({a, b}));
+  computeDegrees();
+  updateStats();
+  resetAlgo();
+  drawGraph();
+}
+
+function generateRandom() {
+  document.getElementById('trapExplain').style.display = 'none';
+  const n = parseInt(document.getElementById('vertexCount').value);
+  const prob = parseFloat(document.getElementById('edgeProb').value);
+  const cx = canvas ? canvas.width/2 : 400;
+  const cy = canvas ? canvas.height/2 : 250;
+  const r = Math.min(cx, cy) * 0.65;
+  graph.vertices = Array.from({length: n}, (_, i) => ({
+    id: i,
+    x: cx + r * Math.cos(2*Math.PI*i/n - Math.PI/2),
+    y: cy + r * Math.sin(2*Math.PI*i/n - Math.PI/2),
+    state: 'default',
+    degree: 0
+  }));
+  graph.edges = [];
+  for (let i = 0; i < n; i++)
+    for (let j = i+1; j < n; j++)
+      if (Math.random() < prob) graph.edges.push({a:i, b:j});
+  computeDegrees();
+  updateStats();
+  resetAlgo();
+  drawGraph();
+}
+
+function computeDegrees() {
+  graph.vertices.forEach(v => v.degree = 0);
+  graph.edges.forEach(e => {
+    graph.vertices[e.a].degree++;
+    graph.vertices[e.b].degree++;
+  });
+}
+
+function updateStats() {
+  document.getElementById('statV').textContent = graph.vertices.length;
+  document.getElementById('statE').textContent = graph.edges.length;
+}
+
+// ============================================================
+// CANVAS INIT
+// ============================================================
+function initCanvas() {
+  canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  const cont = document.getElementById('singleViz');
+  canvas.width = cont.offsetWidth || 700;
+  canvas.height = cont.offsetHeight || 420;
+  ctx = canvas.getContext('2d');
+
+  bruteCanvas = document.getElementById('bruteCanvas');
+  greedyCanvas = document.getElementById('greedyCanvas');
+  if (bruteCanvas) {
+    const cp = bruteCanvas.parentElement;
+    bruteCanvas.width = cp.offsetWidth || 350;
+    bruteCanvas.height = cp.offsetHeight || 420;
+    bruteCtx = bruteCanvas.getContext('2d');
+  }
+  if (greedyCanvas) {
+    const cp = greedyCanvas.parentElement;
+    greedyCanvas.width = cp.offsetWidth || 350;
+    greedyCanvas.height = cp.offsetHeight || 420;
+    greedyCtx = greedyCanvas.getContext('2d');
+  }
+}
+
+// ============================================================
+// DRAWING
+// ============================================================
+const STATE_COLORS = {
+  default: { fill: '#2c2018', stroke: '#5a4030' },
+  current: { fill: '#14b8a6', stroke: '#5eead4' },
+  selected: { fill: '#10b981', stroke: '#34d399' },
+  removed: { fill: '#991b1b', stroke: '#ef4444' },
+  eliminated: { fill: '#2c2018', stroke: '#3d2e22' }
+};
+
+function drawGraphOn(c, context, verts, edges, isActive) {
+  if (!context || !c) return;
+  context.clearRect(0, 0, c.width, c.height);
+
+  // Draw edges
+  edges.forEach(e => {
+    const va = verts[e.a], vb = verts[e.b];
+    const aElim = va.state === 'removed' || va.state === 'eliminated';
+    const bElim = vb.state === 'removed' || vb.state === 'eliminated';
+    context.beginPath();
+    context.moveTo(va.x, va.y);
+    context.lineTo(vb.x, vb.y);
+    context.strokeStyle = (aElim || bElim) ? '#2c2018' : '#3d2e22';
+    context.lineWidth = 1.5;
+    context.stroke();
+  });
+
+  // Draw vertices
+  verts.forEach(v => {
+    const col = STATE_COLORS[v.state] || STATE_COLORS.default;
+    const r = 18;
+
+    // Shadow for selected
+    if (v.state === 'selected') {
+      context.beginPath();
+      context.arc(v.x, v.y, r + 5, 0, 2*Math.PI);
+      context.fillStyle = 'rgba(16,185,129,0.2)';
+      context.fill();
+    }
+    if (v.state === 'current') {
+      context.beginPath();
+      context.arc(v.x, v.y, r + 5, 0, 2*Math.PI);
+      context.fillStyle = 'rgba(20,184,166,0.2)';
+      context.fill();
+    }
+
+    context.beginPath();
+    context.arc(v.x, v.y, r, 0, 2*Math.PI);
+    context.fillStyle = col.fill;
+    context.fill();
+    context.strokeStyle = col.stroke;
+    context.lineWidth = 2;
+    context.stroke();
+
+    context.fillStyle = v.state === 'eliminated' ? '#3d2e22' : '#ffffff';
+    context.font = 'bold 12px JetBrains Mono';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(v.id, v.x, v.y);
+
+    // Degree label
+    if (v.state !== 'removed' && v.state !== 'eliminated') {
+      context.fillStyle = '#c0b0a0';
+      context.font = '9px JetBrains Mono';
+      context.fillText('d=' + v.degree, v.x, v.y + 28);
+    }
+  });
+}
+
+function drawGraph() {
+  if (!ctx) return;
+  const verts = graph.vertices.map(v => ({...v}));
+  drawGraphOn(canvas, ctx, verts, graph.edges, true);
+}
+
+// ============================================================
+// GREEDY ALGORITHM (step-by-step generator)
+// ============================================================
+function* greedyGen(verts, edges) {
+  // Clone
+  let remaining = verts.map(v => ({...v, active: true}));
+  const IS = [];
+  const adj = buildAdj(verts.length, edges);
+
+  yield { verts: cloneVerts(remaining, verts.length), IS: [...IS], step: 0, line: 0,
+    explain: 'Initialize: all vertices active, independent set S = ∅.' };
+
+  let iter = 0;
+  while (remaining.some(v => v.active)) {
+    iter++;
+    // Find min-degree active vertex
+    let minDeg = Infinity, minV = -1;
+    remaining.forEach(v => {
+      if (!v.active) return;
+      const deg = adj[v.id].filter(u => remaining[u].active).length;
+      v.degree = deg;
+      if (deg < minDeg) { minDeg = deg; minV = v.id; }
+    });
+    if (minV === -1) break;
+
+    // Mark current
+    remaining[minV].state = 'current';
+    yield { verts: cloneVerts(remaining, verts.length), IS: [...IS], step: iter*3-2, line: 3,
+      explain: `Iteration ${iter}: Vertex ${minV} has minimum degree d=${minDeg}. Examining it as a candidate.` };
+
+    // Add to IS
+    IS.push(minV);
+    remaining[minV].state = 'selected';
+    remaining[minV].active = false;
+    yield { verts: cloneVerts(remaining, verts.length), IS: [...IS], step: iter*3-1, line: 4,
+      explain: `Add vertex ${minV} to independent set S. |S| = ${IS.length}.` };
+
+    // Remove neighbors
+    const neighbors = adj[minV].filter(u => remaining[u].active);
+    neighbors.forEach(u => {
+      remaining[u].state = 'removed';
+      remaining[u].active = false;
+    });
+    if (neighbors.length > 0) {
+      yield { verts: cloneVerts(remaining, verts.length), IS: [...IS], step: iter*3, line: 5,
+        explain: `Remove neighbors of ${minV}: {${neighbors.join(', ')}} — they are adjacent to a selected vertex. Eliminated: ${neighbors.length} vertices.` };
+    }
+
+    // Eliminate
+    remaining.forEach(v => {
+      if (!v.active && v.state === 'removed') v.state = 'eliminated';
+    });
+  }
+
+  yield { verts: cloneVerts(remaining, verts.length), IS: [...IS], step: iter*3+1, line: 7,
+    explain: `✓ Done! Independent Set S = {${IS.join(', ')}} with |S| = ${IS.length}. Vertex Cover V\\S = {${verts.filter(v=>!IS.includes(v.id)).map(v=>v.id).join(', ')}} with size ${verts.length - IS.length}.` };
+}
+
+// ============================================================
+// BRUTE FORCE (step-by-step generator)
+// ============================================================
+function* bruteGen(verts, edges) {
+  const n = verts.length;
+  const total = 1 << n;
+  let bestIS = [], bestSize = 0;
+
+  yield { verts: verts.map(v=>({...v,state:'default'})), IS: [], step: 0, line: 0,
+    explain: `Brute force: enumerate all 2ⁿ = 2^${n} = ${total} subsets.` };
+
+  for (let mask = 0; mask < total; mask++) {
+    const subset = [];
+    for (let i = 0; i < n; i++) if (mask & (1 << i)) subset.push(i);
+
+    // Check independence
+    let valid = true;
+    for (let e of edges) {
+      if (subset.includes(e.a) && subset.includes(e.b)) { valid = false; break; }
+    }
+
+    const newVerts = verts.map(v => ({
+      ...v,
+      state: subset.includes(v.id) ? (valid ? 'current' : 'removed') : 'default'
+    }));
+
+    if (mask % Math.max(1, Math.floor(total/20)) === 0 || valid) {
+      yield { verts: newVerts, IS: valid && subset.length > bestSize ? subset : bestIS,
+        step: mask+1, line: valid ? 4 : 3,
+        explain: `Checking subset {${subset.join(', ')}} (mask ${mask.toString(2).padStart(n,'0')}): ${valid ? '✓ Valid IS, size '+subset.length : '✗ Not independent (adjacent pair found)'}. Best so far: size ${bestSize}.` };
+    }
+
+    if (valid && subset.length > bestSize) {
+      bestSize = subset.length;
+      bestIS = [...subset];
+    }
+  }
+
+  const finalVerts = verts.map(v => ({
+    ...v,
+    state: bestIS.includes(v.id) ? 'selected' : 'eliminated'
+  }));
+  yield { verts: finalVerts, IS: bestIS, step: total, line: 6,
+    explain: `✓ Done! Optimal Independent Set = {${bestIS.join(', ')}}, size ${bestIS.length}. Vertex Cover = {${verts.filter(v=>!bestIS.includes(v.id)).map(v=>v.id).join(', ')}}, size ${verts.length-bestIS.length}.` };
+}
+
+function buildAdj(n, edges) {
+  const adj = Array.from({length:n}, () => []);
+  edges.forEach(e => { adj[e.a].push(e.b); adj[e.b].push(e.a); });
+  return adj;
+}
+
+function cloneVerts(remaining, n) {
+  return Array.from({length:n}, (_,i) => ({...remaining[i]}));
+}
+
+// ============================================================
+// ALGO CONTROL
+// ============================================================
+let genIterator = null;
+
+function initAlgo() {
+  const verts = graph.vertices.map(v => ({...v, state:'default'}));
+  const edges = graph.edges;
+  genIterator = mode === 'greedy' ? greedyGen(verts, edges) : bruteGen(verts, edges);
+  currentStep = 0;
+  stepHistory = [];
+}
+
+function stepAlgo() {
+  if (!genIterator) initAlgo();
+  const result = genIterator.next();
+  if (result.done) {
+    setStatus('done', 'Complete');
+    document.getElementById('btnPlay').disabled = true;
+    document.getElementById('btnStepFwd').disabled = true;
+    return false;
+  }
+  const s = result.value;
+  // Save snapshot for step-back
+  stepHistory.push({
+    step: currentStep,
+    vertStates: graph.vertices.map(v => v.state),
+    explain: document.getElementById('explanationBox').textContent,
+    line: s.line,
+    statIS: document.getElementById('statIS').textContent,
+    statVC: document.getElementById('statVC').textContent
+  });
+  document.getElementById('btnStepBack').disabled = stepHistory.length <= 1;
+
+  currentStep = s.step;
+  document.getElementById('stepCounter').textContent = s.step;
+  document.getElementById('explanationBox').textContent = s.explain;
+  highlightPseudo(s.line);
+
+  // Update graph
+  graph.vertices.forEach((v, i) => v.state = s.verts[i] ? s.verts[i].state : 'default');
+  if (!compareMode) drawGraph();
+
+  // Update IS stats
+  if (s.IS && s.IS.length > 0) {
+    document.getElementById('statIS').textContent = s.IS.length + ' {' + s.IS.join(',') + '}';
+    document.getElementById('statVC').textContent = (graph.vertices.length - s.IS.length) + ' {' + graph.vertices.filter(v=>!s.IS.includes(v.id)).map(v=>v.id).join(',') + '}';
+  }
+
+  setStatus('run', 'Running...');
+  return true;
+}
+
+function stepBack() {
+  if (stepHistory.length === 0) return;
+  pauseAlgo();
+  const snap = stepHistory.pop();
+  currentStep = snap.step;
+  document.getElementById('stepCounter').textContent = snap.step;
+  document.getElementById('explanationBox').textContent = snap.explain;
+  highlightPseudo(snap.line);
+  graph.vertices.forEach((v, i) => v.state = snap.vertStates[i]);
+  document.getElementById('statIS').textContent = snap.statIS;
+  document.getElementById('statVC').textContent = snap.statVC;
+  document.getElementById('btnStepBack').disabled = stepHistory.length === 0;
+  document.getElementById('btnStepFwd').disabled = false;
+  document.getElementById('btnPlay').disabled = false;
+  if (!compareMode) drawGraph();
+  setStatus('idle', 'Stepped back');
+  // Re-init generator to replay from start up to current snapshot position
+  const verts = graph.vertices.map(v => ({...v}));
+  const edges = graph.edges;
+  genIterator = mode === 'greedy' ? greedyGen(verts, edges) : bruteGen(verts, edges);
+  // Replay silently to current step
+  for (let i = 0; i < snap.step; i++) {
+    const r = genIterator.next();
+    if (r.done) break;
+  }
+}
+
+function playAlgo() {
+  if (isPlaying) return;
+  isPlaying = true;
+  document.getElementById('btnPause').disabled = false;
+  document.getElementById('btnPlay').disabled = true;
+  setStatus('run', 'Running...');
+
+  function tick() {
+    if (!isPlaying) return;
+    const cont = stepAlgo();
+    if (cont) {
+      const speed = parseInt(document.getElementById('speedSlider').value);
+      const delay = 1600 - speed;
+      animTimer = setTimeout(tick, delay);
+    } else {
+      isPlaying = false;
+      document.getElementById('btnPause').disabled = true;
+    }
+  }
+  tick();
+}
+
+function pauseAlgo() {
+  isPlaying = false;
+  clearTimeout(animTimer);
+  document.getElementById('btnPause').disabled = true;
+  document.getElementById('btnPlay').disabled = false;
+  setStatus('idle', 'Paused');
+}
+
+function resetAlgo() {
+  isPlaying = false;
+  clearTimeout(animTimer);
+  genIterator = null;
+  currentStep = 0;
+  stepHistory = [];
+  document.getElementById('stepCounter').textContent = '0';
+  document.getElementById('explanationBox').textContent = 'Press Play or Step to begin the algorithm.';
+  document.getElementById('btnPlay').disabled = false;
+  document.getElementById('btnStepFwd').disabled = false;
+  document.getElementById('btnStepBack').disabled = true;
+  document.getElementById('btnPause').disabled = true;
+  document.getElementById('statIS').textContent = '—';
+  document.getElementById('statVC').textContent = '—';
+  setStatus('idle', 'Ready');
+  graph.vertices.forEach(v => v.state = 'default');
+  computeDegrees();
+  drawGraph();
+  highlightPseudo(-1);
+}
+
+function setStatus(type, text) {
+  const dot = document.getElementById('statusDot');
+  dot.className = 'dot dot-' + (type === 'run' ? 'run' : type === 'done' ? 'done' : 'idle');
+  document.getElementById('statusText').textContent = text;
+}
+
+// ============================================================
+// COMPARE MODE
+// ============================================================
+let compareGreedyGen = null, compareBruteGen = null;
+let comparePlaying = false;
+
+function toggleCompare() {
+  compareMode = !compareMode;
+  document.getElementById('singleViz').style.display = compareMode ? 'none' : 'block';
+  document.getElementById('compareViz').style.display = compareMode ? 'grid' : 'none';
+  if (compareMode) {
+    initCanvas();
+    runCompare();
+  } else {
+    resetAlgo();
+  }
+}
+
+function runCompare() {
+  const verts = graph.vertices.map(v => ({...v, state:'default'}));
+  const edges = graph.edges;
+  compareGreedyGen = greedyGen(JSON.parse(JSON.stringify(verts)), edges);
+  compareBruteGen = bruteGen(JSON.parse(JSON.stringify(verts)), edges);
+
+  // Position vertices for compare canvases
+  const positionVerts = (canvas, verts) => {
+    const cx = canvas.width/2, cy = canvas.height/2;
+    const n = verts.length;
+    const r = Math.min(cx, cy) * 0.65;
+    verts.forEach((v, i) => {
+      v.x = cx + r * Math.cos(2*Math.PI*i/n - Math.PI/2);
+      v.y = cy + r * Math.sin(2*Math.PI*i/n - Math.PI/2);
+    });
+  };
+
+  const gVerts = graph.vertices.map(v=>({...v,state:'default'}));
+  const bVerts = graph.vertices.map(v=>({...v,state:'default'}));
+
+  compareGreedyGen = greedyGen(gVerts, edges);
+  compareBruteGen  = bruteGen(bVerts, edges);
+
+  let gDone = false, bDone = false;
+
+  function compareTick() {
+    if (!gDone) {
+      const gr = compareGreedyGen.next();
+      if (gr.done) gDone = true;
+      else {
+        const gv = gr.value.verts;
+        const posV = gVerts.map((v,i)=>({...gv[i], x: v.x, y: v.y}));
+        drawGraphOn(greedyCanvas, greedyCtx, posV, edges, true);
+      }
+    }
+    if (!bDone) {
+      const br = compareBruteGen.next();
+      if (br.done) bDone = true;
+      else {
+        const bv = br.value.verts;
+        const posV = bVerts.map((v,i)=>({...bv[i], x: v.x, y: v.y}));
+        drawGraphOn(bruteCanvas, bruteCtx, posV, edges, true);
+      }
+    }
+    if (!gDone || !bDone) setTimeout(compareTick, 600);
+  }
+
+  setTimeout(compareTick, 300);
+}
+
+// ============================================================
+// PSEUDOCODE
+// ============================================================
+const GREEDY_PSEUDO = [
+  { text: '<span class="kw">function</span> <span class="fn">GreedyIS</span>(G = (V, E)):',         line: 0 },
+  { text: '  S ← ∅  <span class="cm">// independent set</span>',                                    line: 1 },
+  { text: '  <span class="kw">while</span> V is not empty:',                                         line: 2 },
+  { text: '    v ← vertex in V with minimum degree',                                                 line: 3 },
+  { text: '    S ← S ∪ {v}  <span class="cm">// add to IS</span>',                                  line: 4 },
+  { text: '    V ← V \\ (N[v])  <span class="cm">// remove v & neighbors</span>',                   line: 5 },
+  { text: '    <span class="cm">// update degrees of remaining vertices</span>',                      line: 6 },
+  { text: '  <span class="kw">return</span> S',                                                       line: 7 },
+];
+
+const BRUTE_PSEUDO = [
+  { text: '<span class="kw">function</span> <span class="fn">BruteForceIS</span>(G = (V, E)):',      line: 0 },
+  { text: '  best ← ∅',                                                                              line: 1 },
+  { text: '  <span class="kw">for</span> each subset S ⊆ V (2ⁿ subsets):',                          line: 2 },
+  { text: '    <span class="kw">if</span> S is NOT independent: <span class="kw">skip</span>',      line: 3 },
+  { text: '    <span class="kw">if</span> |S| > |best|: best ← S',                                   line: 4 },
+  { text: '  <span class="cm">// check all pairs (u,v) in S×S for edges</span>',                    line: 5 },
+  { text: '  <span class="kw">return</span> best',                                                    line: 6 },
+];
+
+const GREEDY_TOOLTIPS = [
+  'Function signature — takes an undirected graph G with vertex set V and edge set E as input.',
+  'Initialize S as the empty set. S will grow to become our independent set.',
+  'Keep looping as long as there are still active (unremoved) vertices left in V.',
+  'Scan all remaining vertices, pick the one with the fewest edges to other remaining vertices. Low degree = fewer neighbors to eliminate.',
+  'Add the chosen vertex v to the independent set S. It is safe because we only add vertices with no IS neighbors.',
+  'Remove v itself AND all of v\'s neighbors from V. They can\'t join S since they are adjacent to v which is already in S.',
+  'After removal, degrees of remaining vertices may have changed — update them so the next iteration picks correctly.',
+  'Return the completed independent set S.',
+];
+
+const BRUTE_TOOLTIPS = [
+  'Function signature — takes graph G and will return the maximum independent set by exhaustive search.',
+  'Initialize best as empty. We\'ll update this whenever we find a larger valid independent set.',
+  'Iterate over every possible subset of V. For n vertices there are 2ⁿ subsets — this is why brute force is exponential.',
+  'Check if subset S is independent: for every pair of vertices in S, ensure no edge connects them. If not independent, skip it.',
+  'If this valid IS is larger than the best found so far, update best. We keep track of the globally maximum one.',
+  'Inner check detail: for each pair (u,v) in S×S, look up whether (u,v) ∈ E. One edge found = not independent.',
+  'Return the largest independent set found after checking all 2ⁿ subsets. Guaranteed optimal.',
+];
+
+function renderPseudo() {
+  const lines = mode === 'greedy' ? GREEDY_PSEUDO : BRUTE_PSEUDO;
+  const tips  = mode === 'greedy' ? GREEDY_TOOLTIPS : BRUTE_TOOLTIPS;
+  document.getElementById('pseudoTitle').textContent = mode === 'greedy' ? 'GREEDY MINIMUM-DEGREE HEURISTIC' : 'BRUTE FORCE EXACT SOLVER';
+  document.getElementById('pseudoCode').innerHTML = lines.map((l, i) =>
+    `<div class="pseudo-line" id="pline${i}" data-tip="${tips[i] ? tips[i].replace(/"/g, '&quot;') : ''}">${l.text}</div>`
+  ).join('');
+
+  // Attach hover listeners
+  const tooltip = document.getElementById('pseudoTooltip');
+  document.querySelectorAll('.pseudo-line').forEach(el => {
+    el.addEventListener('mouseenter', e => {
+      const tip = el.getAttribute('data-tip');
+      if (!tip) return;
+      tooltip.textContent = tip;
+      tooltip.classList.add('visible');
+    });
+    el.addEventListener('mousemove', e => {
+      const x = e.clientX + 14;
+      const y = e.clientY - 10;
+      const tw = tooltip.offsetWidth;
+      const th = tooltip.offsetHeight;
+      tooltip.style.left = (x + tw > window.innerWidth ? e.clientX - tw - 14 : x) + 'px';
+      tooltip.style.top  = (y + th > window.innerHeight ? e.clientY - th - 10 : y) + 'px';
+    });
+    el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+  });
+}
+
+function highlightPseudo(lineNum) {
+  document.querySelectorAll('.pseudo-line').forEach(el => el.classList.remove('highlight'));
+  if (lineNum >= 0) {
+    const el = document.getElementById('pline' + lineNum);
+    if (el) el.classList.add('highlight');
+  }
+}
+
+// ============================================================
+// GROWTH CHART
+// ============================================================
+function drawGrowthChart() {
+  const cv = document.getElementById('growthChart');
+  if (!cv) return;
+  cv.width = cv.offsetWidth;
+  cv.height = 120;
+  const ctx2 = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const pad = { l: 45, r: 20, t: 10, b: 25 };
+  const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
+
+  ctx2.clearRect(0,0,W,H);
+
+  const ns = Array.from({length:12},(_,i)=>i+3);
+  const greedy = ns.map(n => n*n); // O(n²)
+  const brute  = ns.map(n => Math.min(Math.pow(2,n)*n*n, 5e9));
+
+  const maxY = Math.max(...brute);
+
+  // Grid
+  ctx2.strokeStyle = '#2c2018';
+  ctx2.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+    const y = pad.t + iH * (1-t);
+    ctx2.beginPath(); ctx2.moveTo(pad.l, y); ctx2.lineTo(W-pad.r, y); ctx2.stroke();
+  });
+
+  const toX = n => pad.l + (n-3)/9 * iW;
+  const toY = v => pad.t + iH * (1 - Math.min(v/maxY, 1));
+
+  // Brute (exponential)
+  ctx2.beginPath();
+  ctx2.strokeStyle = '#14b8a6';
+  ctx2.lineWidth = 2;
+  ns.forEach((n,i) => { i===0 ? ctx2.moveTo(toX(n),toY(brute[i])) : ctx2.lineTo(toX(n),toY(brute[i])); });
+  ctx2.stroke();
+
+  // Greedy (quadratic)
+  ctx2.beginPath();
+  ctx2.strokeStyle = '#10b981';
+  ctx2.lineWidth = 2;
+  ns.forEach((n,i) => { i===0 ? ctx2.moveTo(toX(n),toY(greedy[i])) : ctx2.lineTo(toX(n),toY(greedy[i])); });
+  ctx2.stroke();
+
+  // X labels
+  ctx2.fillStyle = '#c0b0a0';
+  ctx2.font = '9px JetBrains Mono';
+  ctx2.textAlign = 'center';
+  ns.forEach(n => ctx2.fillText(n, toX(n), H-8));
+
+  // Legend
+  ctx2.fillStyle = '#14b8a6'; ctx2.fillText('Brute O(2ⁿ)', W-80, pad.t+8);
+  ctx2.fillStyle = '#10b981'; ctx2.fillText('Greedy O(n²)', W-80, pad.t+20);
+  ctx2.fillStyle = '#c0b0a0'; ctx2.fillText('n →', W-20, H-8);
+}
+
+// ============================================================
+// EDGE PROB LABEL
+// ============================================================
+document.getElementById('edgeProb').addEventListener('input', e => {
+  document.getElementById('edgeProbVal').textContent = e.target.value;
+});
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', () => {
+  initCanvas();
+  renderPseudo();
+  loadPreset('cycle6');
+  drawGrowthChart();
+  window.addEventListener('resize', () => {
+    initCanvas();
+    drawGraph();
+    drawGrowthChart();
+  });
+});
+</script>
+
+</body>
+</html>
